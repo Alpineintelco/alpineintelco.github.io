@@ -5,14 +5,15 @@
 }
 
 :root {
-  --ink: #ffffff;
-  --hover-ink: #000000;
   --accent: #802e7f;
   --bg: #0b0b0d;
   --shade: rgba(0, 0, 0, 0.35);
   --top: 30px;
   --side: 32px;
   --logo-h: 56px;
+  --tab-gap: 32px;
+  --speed: 0.35s;
+  --ease: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 * {
@@ -27,6 +28,8 @@ body {
 }
 
 body {
+  --ink: #ffffff;
+  --hover-ink: #000000;
   height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -35,17 +38,26 @@ body {
   font-size: 16px;
   line-height: 1.2;
   color: var(--ink);
-  background: linear-gradient(180deg, var(--bg), #1a1420);
+  background: #e2e2df;
+  transition: color var(--speed) var(--ease);
 }
 
-.home {
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
   background: linear-gradient(var(--shade), var(--shade)), url("../images/bg.jpg") center / cover no-repeat, var(--bg);
+  transition: opacity var(--speed) var(--ease);
 }
 
-.page {
+body:has(:target) {
   --ink: #000000;
   --hover-ink: #ffffff;
-  background: #e2e2df;
+}
+
+body:has(:target)::before {
+  opacity: 0;
 }
 
 a {
@@ -55,14 +67,27 @@ a {
 
 .logo {
   position: absolute;
+  z-index: 1;
   top: var(--top);
   left: var(--side);
+  display: grid;
 }
 
 .logo img {
+  grid-area: 1 / 1;
   display: block;
   height: var(--logo-h);
   width: auto;
+  transition: opacity var(--speed) var(--ease);
+}
+
+.logo img + img,
+body:has(:target) .logo img:first-child {
+  opacity: 0;
+}
+
+body:has(:target) .logo img + img {
+  opacity: 1;
 }
 
 .nav {
@@ -73,40 +98,51 @@ a {
   flex: 1;
   gap: 20px;
   font-size: 12px;
+  animation: appear var(--speed) var(--ease);
 }
 
-.page .nav {
+body:has(:target) .nav {
   position: absolute;
+  z-index: 1;
   top: calc(var(--top) + var(--logo-h) / 2);
   right: var(--side);
   translate: 0 -50%;
   flex-direction: row;
-  gap: 32px;
+  gap: var(--tab-gap);
+  animation-name: appear-again;
+}
+
+body:has(:target) .nav::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: var(--x);
+  width: var(--w);
+  height: 100%;
+  scale: 1.1;
+  background: var(--accent);
+  transition: left var(--speed) var(--ease), width var(--speed) var(--ease);
+}
+
+body:has(#shop:target) {
+  --x: 0px;
+  --w: calc(4ch + 1px);
+}
+
+body:has(#gallery:target) {
+  --x: calc(4ch + 1px + var(--tab-gap));
+  --w: calc(7ch + 1px);
+}
+
+body:has(#about:target) {
+  --x: calc(11ch + 2px + 2 * var(--tab-gap));
+  --w: calc(5ch + 1px);
 }
 
 .nav a {
   padding: 1px 0 0 1px;
-  transition: transform 0.3s;
-}
-
-@view-transition {
-  navigation: auto;
-}
-
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 0.2s;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation: none;
-  }
-}
-
-.nav a[aria-current="page"] {
-  text-decoration: underline;
+  transition: transform 0.3s, color var(--speed) var(--ease);
 }
 
 .contact {
@@ -134,6 +170,15 @@ a {
   animation: highlight 0.4s forwards;
 }
 
+body:has(#shop:target) .nav a[href="#shop"],
+body:has(#gallery:target) .nav a[href="#gallery"],
+body:has(#about:target) .nav a[href="#about"] {
+  color: var(--hover-ink);
+  transform: scale(1.1);
+  background: none;
+  animation: none;
+}
+
 @keyframes highlight {
   from {
     background-position: 0;
@@ -143,18 +188,45 @@ a {
   }
 }
 
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes appear-again {
+  from {
+    opacity: 0;
+  }
+}
+
 main {
+  display: none;
   flex: 1;
   min-height: 0;
+  width: 100%;
   overflow: hidden;
+  padding: 0 16px;
+  text-align: center;
+}
+
+body:has(:target) main {
   display: flex;
+}
+
+section {
+  display: none;
+  flex: 1;
+  min-height: 0;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 24px;
-  width: 100%;
-  padding: 0 16px;
-  text-align: center;
+}
+
+section:target {
+  display: flex;
+  animation: appear var(--speed) var(--ease);
 }
 
 .photos-wrap {
@@ -199,6 +271,12 @@ footer {
   font-size: 10px;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --speed: 0s;
+  }
+}
+
 @media (max-width: 749px) {
   body {
     font-size: 12px;
@@ -208,10 +286,7 @@ footer {
     --top: 22px;
     --side: 20px;
     --logo-h: 44px;
-  }
-
-  .page .nav {
-    gap: 24px;
+    --tab-gap: 24px;
   }
 
   .photos {
