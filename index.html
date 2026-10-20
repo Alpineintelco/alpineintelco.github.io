@@ -10,16 +10,15 @@
   <link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png">
   <link rel="stylesheet" href="assets/css/style.css">
   <script type="importmap">{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
-  <script type="module" src="assets/js/globe.js"></script>
   <script type="module" src="assets/js/maquette.js"></script>
+  <script type="module" src="assets/js/game.js"></script>
 </head>
 <body>
   <a class="logo" href="#"><img src="assets/images/logo.svg" alt="The Alpine Intelligence Collective, home"><img src="assets/images/logo-purple.svg" alt=""></a>
   <nav class="nav">
     <a href="#shop">shop</a>
-    <a href="#gallery">gallery</a>
-    <a href="#globe">globe</a>
     <a href="#maquette">maquette</a>
+    <a href="#game">game</a>
     <a href="#about">about</a>
   </nav>
   <main>
@@ -28,47 +27,59 @@
         <p>first release coming soon.</p>
       </div>
     </section>
-    <section id="gallery">
-      <div class="photos-wrap">
-        <div class="photos" style="--cd: 2; --rd: 1; --cm: 1; --rm: 2">
-          <img src="assets/gallery/img_3165.jpg" alt="" loading="lazy">
-          <img src="assets/gallery/img_3142.jpg" alt="" loading="lazy">
-        </div>
-      </div>
-    </section>
-    <section id="globe">
-      <div class="frame">
-        <div class="earth"></div>
-        <div class="plan box">
-          <div class="row">
-            <button class="open" type="button" aria-pressed="false">relief</button>
-            <button class="open" type="button" aria-pressed="false">labels</button>
-            <button type="button" aria-pressed="false">course</button>
-            <button type="button" hidden>undo</button>
-            <button type="button" hidden>export gpx</button>
-          </div>
-          <div class="chart" hidden></div>
-          <div class="settings" hidden>
-            <label>show <input class="shown" type="checkbox" checked><output>on</output></label>
-            <label>quality <input class="quality" type="range" min="0" max="2" step="1" value="1"><output>mid</output></label>
-            <label>render <input class="floor" type="range" min="0" max="3000" step="100" value="900"><output>900 m</output></label>
-          </div>
-          <div class="settings" hidden>
-            <label>show <input class="named" type="checkbox" checked><output>on</output></label>
-          </div>
-        </div>
-      </div>
-      <p class="credit"><a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">&copy; OpenMapTiles</a> Data from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> <a href="https://mapterhorn.com/attribution" target="_blank" rel="noopener">&copy; Mapterhorn</a> <a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a></p>
-    </section>
     <section id="maquette">
       <div class="frame">
         <div class="stage"><p class="loading">shaping the maquette…</p></div>
+        <form class="lobby gate" hidden>
+          <p class="title">maquette</p>
+          <p class="pitch">enter the password to open the maquette.</p>
+          <div class="ask">
+            <input class="answer" type="password" placeholder="password" autocomplete="off">
+            <button class="send" type="submit">enter</button>
+          </div>
+        </form>
         <div class="tune box" hidden>
           <div class="settings">
-            <label>detail <input class="detail" type="range" min="10" max="100" step="5" value="65"><output>65%</output></label>
+            <label>course <select class="race"></select></label>
+            <label>detail <input class="detail" type="range" min="10" max="100" step="5" value="75"><output>75%</output></label>
             <label>labels <input class="named" type="checkbox"><output>off</output></label>
+            <label>default <input class="toon" type="checkbox"><output>off</output></label>
+            <label>sides <select class="sides"><option>white</option><option value="cartoon">default</option><option>none</option></select></label>
           </div>
         </div>
+      </div>
+      <p class="credit"><a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">&copy; OpenMapTiles</a> <a href="https://mapterhorn.com/attribution" target="_blank" rel="noopener">&copy; Mapterhorn</a> Traces from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> via <a href="https://brouter.de" target="_blank" rel="noopener">BRouter</a> <a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a></p>
+    </section>
+    <section id="game">
+      <div class="frame">
+        <div class="stage"></div>
+        <div class="lobby">
+          <div class="head">
+            <p class="title">trailable.io <span class="number"></span></p>
+            <p class="balance"></p>
+          </div>
+          <p class="pitch">one course a day. name it from its trace in under a minute. the trace draws itself in 50 seconds, towns appear with 20 seconds left, distance and d+ with the last 10. the faster you find it, the more points, from 100 down to 0.</p>
+          <div class="options">
+            <label>detail <input class="detail" type="range" min="10" max="100" step="5" value="75"><output>75%</output></label>
+            <div>style <span class="choice toon"><button type="button" data-value="cartoon">default</button><button type="button" data-value="realist" data-price="100"><span class="name">realist</span><span class="cost"><svg viewBox="0 0 12 14" width="9" height="11" aria-hidden="true"><rect x="1" y="6" width="10" height="8" rx="1" fill="currentColor"/><path class="shackle" d="M3.5 6V4a2.5 2.5 0 0 1 5 0v2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>100 <i class="coin"></i></span></button></span></div>
+          </div>
+          <button class="go" type="button" disabled>shaping the maquette…</button>
+          <p class="next"></p>
+        </div>
+        <div class="clock" hidden>
+          <div class="bar"><span></span></div>
+          <p><span class="left">60s remaining</span><span class="hint" hidden></span></p>
+        </div>
+        <div class="play" hidden>
+          <div class="ask">
+            <ul class="picks" hidden></ul>
+            <input class="answer" type="text" placeholder="name the course" autocomplete="off" spellcheck="false">
+            <button class="send" type="button">guess</button>
+          </div>
+        </div>
+        <ol class="feed" hidden></ol>
+        <div class="flash"></div>
+        <div class="result" hidden></div>
       </div>
       <p class="credit"><a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">&copy; OpenMapTiles</a> <a href="https://mapterhorn.com/attribution" target="_blank" rel="noopener">&copy; Mapterhorn</a> Traces from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> via <a href="https://brouter.de" target="_blank" rel="noopener">BRouter</a> <a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a></p>
     </section>
