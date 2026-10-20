@@ -1,0 +1,19 @@
+---context:global
+assign validForFoot = true
+assign downhillcost = 0
+assign downhillcutoff = 0
+assign uphillcost = 0
+assign uphillcutoff = 0
+
+---context:way
+assign blocked =
+  or highway=motorway|motorway_link|trunk|trunk_link
+  or foot=private|no
+  or and access=private|no not foot=yes|designated|permissive
+     sac_scale=alpine_hiking|demanding_alpine_hiking|difficult_alpine_hiking
+assign costfactor = if or blocked highway= then 10000 else 1
+assign turncost = 0
+assign initialcost = 0
+
+---context:node
+assign initialcost = 0

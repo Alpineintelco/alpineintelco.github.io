@@ -2,11 +2,16 @@ const cdn = "https://cdn.jsdelivr.net/npm/maplibre-gl@6.14.0/dist/";
 const box = document.querySelector(".earth");
 const quality = document.querySelector(".quality");
 const floor = document.querySelector(".floor");
+const shown = document.querySelector(".shown");
+const named = document.querySelector(".named");
 const levels = [1024, 512, 256];
 const names = ["low", "mid", "high"];
-const dem = { type: "raster-dem", url: "https://tiles.mapterhorn.com/tilejson.json", encoding: "terrarium", tileSize: 512 };
+const dem = { type: "raster-dem", url: "https://tiles.mapterhorn.com/tilejson.json", encoding: "terrarium", tileSize: 512, maxzoom: 17 };
 const style = "https://tiles.openfreemap.org/styles/liberty";
 const hidden = ["landcover_grass", "landcover_wetland", "park", "road_area_pattern"];
+const brouter = "https://brouter.de/brouter";
+const ranges = ["0-255", "512-767", "8192-8447", "9216-9471", "9472-9727"];
+let route = { type: "FeatureCollection", features: [] };
 let started = false;
 let level = 1;
 let low = 900;
@@ -54,6 +59,7 @@ function globe(prev, next) {
     id: "hills",
     type: "hillshade",
     source: "hills",
+    layout: { visibility: shown.checked ? "visible" : "none" },
     paint: { "hillshade-shadow-color": "#473b24", "hillshade-exaggeration": 0.35 },
   }, {
     id: "tunnels",
@@ -68,10 +74,42 @@ function globe(prev, next) {
       "line-dasharray": [3, 3],
     },
   });
+  layers.push({
+    id: "route-edge",
+    type: "line",
+    source: "route",
+    layout: { "line-join": "round", "line-cap": "round" },
+    paint: { "line-color": "#ffffff", "line-width": 6 },
+  }, {
+    id: "route",
+    type: "line",
+    source: "route",
+    layout: { "line-join": "round", "line-cap": "round" },
+    paint: { "line-color": "#802e7f", "line-width": 3.5 },
+  }, {
+    id: "cities",
+    type: "symbol",
+    source: "cities",
+    minzoom: 6,
+    layout: {
+      visibility: named.checked ? "visible" : "none",
+      "text-field": ["get", "n"],
+      "text-font": ["OCR-A"],
+      "text-size": ["interpolate", ["linear"], ["get", "p"], 20000, 10, 1000000, 13],
+      "text-padding": 4,
+      "symbol-sort-key": ["-", ["get", "p"]],
+    },
+    paint: {
+      "text-color": "#333333",
+      "text-halo-color": "rgba(255, 255, 255, 0.8)",
+      "text-halo-width": 1.2,
+      "text-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0, 7, 0.75],
+    },
+  });
   return {
     ...next,
     layers,
-    sources: { ...next.sources, terrain: { ...dem, tileSize: levels[level] }, hills: { type: "raster-dem", tiles: ["relief://tiles.mapterhorn.com/{z}/{x}/{y}.webp?" + low], encoding: "terrarium", tileSize: levels[level] } },
+    sources: { ...next.sources, route: { type: "geojson", data: route }, cities: { type: "geojson", data: new URL("assets/data/cities.geojson", location.href).href }, terrain: { ...dem, tileSize: levels[level] }, hills: { type: "raster-dem", tiles: ["relief://tiles.mapterhorn.com/{z}/{x}/{y}.webp?" + low], encoding: "terrarium", tileSize: levels[level], maxzoom: 17 } },
     terrain: { source: "terrain", exaggeration: 1 },
     sky: {
       "sky-color": ["interpolate", ["linear"], ["zoom"], 9, "rgba(185, 211, 236, 0)", 11, "#b9d3ec"],
@@ -303,6 +341,252 @@ function controls(map) {
   });
 }
 
+function metres([a, b], [c, d]) {
+  const k = Math.PI / 180;
+  const h = Math.sin(((d - b) * k) / 2) ** 2 + Math.cos(b * k) * Math.cos(d * k) * Math.sin(((c - a) * k) / 2) ** 2;
+  return 12742000 * Math.asin(Math.sqrt(h));
+}
+
+function rise(coords) {
+  let sum = 0;
+  for (let i = 1; i < coords.length; i++) sum += Math.max(coords[i][2] - coords[i - 1][2], 0);
+  return sum;
+}
+
+function plan(map, Marker) {
+  const panel = document.querySelector(".plan");
+  const [course, undo, save] = panel.querySelectorAll(".row button:not(.open)");
+  const opens = panel.querySelectorAll(".open");
+  const sheets = panel.querySelectorAll(".settings");
+  const chart = panel.querySelector(".chart");
+  const pins = [];
+  let on = false;
+  let profile = null;
+  let pending = null;
+  let stops = [];
+  let legs = [];
+  let past = [];
+  let trace = [];
+  const mark = document.createElement("div");
+  mark.className = "spot";
+  const spot = new Marker({ element: mark });
+
+  const upload = () =>
+    (profile ??= fetch("assets/js/run.brf")
+      .then((res) => res.text())
+      .then((text) => fetch(brouter + "/profile", { method: "POST", body: text }))
+      .then((res) => res.json())
+      .then((json) => json.profileid));
+
+  async function follow(a, b) {
+    const id = await upload();
+    const res = await fetch(`${brouter}?lonlats=${a.lng},${a.lat}|${b.lng},${b.lat}&profile=${id}&alternativeidx=0&format=geojson`);
+    if (!res.ok) throw new Error(res.statusText);
+    return (await res.json()).features[0];
+  }
+
+  function leg(a, b) {
+    const n = Math.max(Math.ceil(metres([a.lng, a.lat], [b.lng, b.lat]) / 50), 1);
+    const coords = Array.from({ length: n + 1 }, (_, i) => {
+      const at = [a.lng + ((b.lng - a.lng) * i) / n, a.lat + ((b.lat - a.lat) * i) / n];
+      return [...at, map.queryTerrainElevation(at) ?? 0];
+    });
+    const part = { coords, climb: rise(coords) };
+    (async () => {
+      for (let tries = 0; tries < 2; tries++) {
+        try {
+          const feature = await follow(a, b);
+          part.coords = feature.geometry.coordinates;
+          part.climb = +feature.properties["filtered ascend"];
+          [a.lng, a.lat] = part.coords[0];
+          [b.lng, b.lat] = part.coords.at(-1);
+          return draw();
+        } catch {
+          profile = null;
+        }
+      }
+    })();
+    return part;
+  }
+
+  function pin() {
+    const dot = document.createElement("div");
+    dot.className = "stop";
+    const marker = new Marker({ element: dot, draggable: true }).setLngLat(map.getCenter()).addTo(map);
+    let moved = false;
+    marker.on("dragstart", () => (moved = true));
+    marker.on("dragend", () => {
+      const { lng, lat } = marker.getLngLat();
+      move(pins.indexOf(marker), { lng, lat });
+    });
+    dot.addEventListener("click", (e) => {
+      if (moved) return (moved = false);
+      const i = pins.indexOf(marker);
+      if (e.detail > 1 || i === stops.length - 1) return;
+      add({ ...stops[i] });
+    });
+    return marker;
+  }
+
+  function graph() {
+    const points = [];
+    let km = 0;
+    let last = null;
+    for (const part of legs) {
+      for (const c of part.coords) {
+        if (last) km += metres(last, c) / 1000;
+        points.push([km, c[2] ?? 0, c[0], c[1]]);
+        last = c;
+      }
+    }
+    trace = points;
+    const climb = legs.reduce((sum, part) => sum + part.climb, 0);
+    const heights = points.map((p) => p[1]);
+    const top = Math.max(...heights);
+    const bottom = Math.min(...heights);
+    const x = (d) => 44 + (km ? (d / km) * 256 : 0);
+    const y = (e) => 12 + ((top - e) / (top - bottom || 1)) * 44;
+    const ridge = points.map(([d, e]) => `${x(d).toFixed(1)},${y(e).toFixed(1)}`).join(" ");
+    return `<p>${km.toFixed(1)} km · ${Math.round(climb)} m D+</p>
+<svg width="300" height="74">
+<polygon points="44,56 ${ridge} 300,56" fill="#802e7f"/>
+<polyline points="${ridge}" fill="none" stroke="#ffffff" stroke-width="1"/>
+<text x="40" y="15" text-anchor="end">${Math.round(top)} m</text>
+<text x="40" y="56" text-anchor="end">${Math.round(bottom)} m</text>
+<text x="44" y="70">0</text>
+<text x="172" y="70" text-anchor="middle">${(km / 2).toFixed(1)}</text>
+<text x="300" y="70" text-anchor="end">${km.toFixed(1)} km</text>
+<line class="cursor" y1="12" y2="56" stroke="#ffffff" visibility="hidden"/>
+<text class="cursor" y="8" text-anchor="middle" visibility="hidden"></text>
+</svg>`;
+  }
+
+  function point(e) {
+    const svg = chart.querySelector("svg");
+    if (!svg || !trace.length) return;
+    const km = trace.at(-1)[0];
+    const d = (Math.min(Math.max(e.clientX - svg.getBoundingClientRect().left - 44, 0), 256) / 256) * km;
+    const at = trace.find((p) => p[0] >= d) ?? trace.at(-1);
+    const x = 44 + (km ? (at[0] / km) * 256 : 0);
+    const [line, label] = svg.querySelectorAll(".cursor");
+    line.setAttribute("x1", x);
+    line.setAttribute("x2", x);
+    label.setAttribute("x", Math.min(Math.max(x, 92), 252));
+    label.textContent = `${at[0].toFixed(1)} km · ${Math.round(at[1])} m`;
+    line.setAttribute("visibility", "visible");
+    label.setAttribute("visibility", "visible");
+    spot.setLngLat([at[2], at[3]]).addTo(map);
+  }
+
+  function unpoint() {
+    spot.remove();
+    for (const el of chart.querySelectorAll(".cursor")) el.setAttribute("visibility", "hidden");
+  }
+
+  function draw() {
+    spot.remove();
+    while (pins.length > stops.length) pins.pop().remove();
+    while (pins.length < stops.length) pins.push(pin());
+    stops.forEach((stop, i) => {
+      pins[i].setLngLat(stop).setDraggable(on);
+      pins[i].getElement().classList.toggle("start", i === 0);
+      pins[i].getElement().classList.toggle("end", i > 0 && i === stops.length - 1);
+    });
+    route = { type: "FeatureCollection", features: legs.map((part) => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: part.coords } })) };
+    map.getSource("route")?.setData(route);
+    undo.disabled = !past.length;
+    save.disabled = !legs.length;
+    chart.hidden = !on || !legs.length;
+    chart.innerHTML = legs.length ? graph() : "";
+  }
+
+  function change(next, joined) {
+    past.push([stops, legs]);
+    [stops, legs] = [next, joined];
+    draw();
+  }
+
+  function add(stop) {
+    if (!on) return;
+    change([...stops, stop], stops.length ? [...legs, leg(stops.at(-1), stop)] : legs);
+  }
+
+  function move(i, stop) {
+    const next = stops.with(i, stop);
+    const joined = legs.slice();
+    if (i > 0) joined[i - 1] = leg(next[i - 1], stop);
+    if (i < legs.length) joined[i] = leg(stop, next[i + 1]);
+    change(next, joined);
+  }
+
+  chart.addEventListener("mousemove", point);
+  chart.addEventListener("mouseleave", unpoint);
+  map.on("click", (e) => {
+    const event = e.originalEvent;
+    if (!on || event.detail > 1 || event.target.closest(".stop")) return;
+    const { lng, lat } = e.lngLat;
+    pending = { x: event.clientX, y: event.clientY, timer: setTimeout(() => add({ lng, lat }), 350) };
+  });
+  box.addEventListener(
+    "mousedown",
+    (e) => {
+      if (pending && Math.hypot(e.clientX - pending.x, e.clientY - pending.y) < 10) clearTimeout(pending.timer);
+    },
+    true,
+  );
+
+  function drawing(state) {
+    on = state;
+    course.setAttribute("aria-pressed", on);
+    undo.hidden = save.hidden = !on;
+    box.classList.toggle("drawing", on);
+    draw();
+  }
+
+  function tab(pick) {
+    opens.forEach((open, j) => {
+      sheets[j].hidden = open !== pick;
+      open.setAttribute("aria-pressed", open === pick);
+    });
+  }
+
+  course.addEventListener("click", () => {
+    if (on) {
+      [stops, legs, past] = [[], [], []];
+      return drawing(false);
+    }
+    tab(null);
+    drawing(true);
+  });
+  opens.forEach((open, i) =>
+    open.addEventListener("click", () => {
+      if (!sheets[i].hidden) return tab(null);
+      if (on) drawing(false);
+      tab(open);
+    }),
+  );
+  undo.addEventListener("click", () => {
+    [stops, legs] = past.pop();
+    draw();
+  });
+  save.addEventListener("click", () => {
+    const points = legs.flatMap((part, i) => (i ? part.coords.slice(1) : part.coords));
+    const gpx = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<gpx version="1.1" creator="The Alpine Intelligence Collective" xmlns="http://www.topografix.com/GPX/1/1">',
+      "<trk><name>course</name><trkseg>",
+      ...points.map(([lng, lat, ele]) => `<trkpt lat="${lat.toFixed(6)}" lon="${lng.toFixed(6)}"><ele>${(ele ?? 0).toFixed(1)}</ele></trkpt>`),
+      "</trkseg></trk>",
+      "</gpx>",
+    ].join("\n");
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([gpx], { type: "application/gpx+xml" }));
+    link.download = "course.gpx";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  });
+}
+
 async function start() {
   if (started || location.hash !== "#globe") return;
   started = true;
@@ -322,6 +606,11 @@ async function start() {
       minZoom: -1,
       maxZoom: 19,
       attributionControl: false,
+      transformRequest: (url, type) => {
+        if (type !== "Glyphs" || !url.includes("OCR-A")) return;
+        const range = url.match(/\d+-\d+(?=\.pbf)/)[0];
+        return { url: ranges.includes(range) ? new URL(`assets/glyphs/${range}.pbf`, location.href).href : url.replace("OCR-A", "Noto%20Sans%20Regular") };
+      },
       canvasContextAttributes: { antialias: true },
       maxPitch: 80,
       boxZoom: false,
@@ -334,8 +623,17 @@ async function start() {
     map.setStyle(style, { transformStyle: globe });
     map.scrollZoom.setWheelZoomRate(1 / 600);
     controls(map);
+    plan(map, maplibregl.Marker);
     quality.addEventListener("input", () => (quality.nextElementSibling.value = names[quality.value]));
     floor.addEventListener("input", () => (floor.nextElementSibling.value = floor.value + " m"));
+    shown.addEventListener("change", () => {
+      shown.nextElementSibling.value = shown.checked ? "on" : "off";
+      map.setLayoutProperty("hills", "visibility", shown.checked ? "visible" : "none");
+    });
+    named.addEventListener("change", () => {
+      named.nextElementSibling.value = named.checked ? "on" : "off";
+      map.setLayoutProperty("cities", "visibility", named.checked ? "visible" : "none");
+    });
     quality.addEventListener("change", () => {
       level = +quality.value;
       map.setStyle(style, { transformStyle: globe });

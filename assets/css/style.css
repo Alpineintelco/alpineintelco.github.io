@@ -171,7 +171,9 @@ body:has(#about:target) {
 .nav a:hover,
 .nav a:focus-visible,
 .link:hover,
-.link:focus-visible {
+.link:focus-visible,
+.plan button:not(:disabled):hover,
+.plan button:focus-visible {
   outline: none;
   color: var(--hover-ink);
   transform: scale(1.1);
@@ -275,35 +277,85 @@ section:target {
   flex: 1;
 }
 
-.tab {
-  position: relative;
+.earth.drawing .maplibregl-canvas-container {
+  cursor: crosshair;
 }
 
-.tab::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 0;
-  width: 100%;
-  height: 8px;
+.stop {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: var(--accent);
 }
 
-.menu {
+.earth.drawing .stop {
+  cursor: crosshair;
+}
+
+.spot {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  background: #ffffff;
+  pointer-events: none;
+}
+
+.stop.start {
+  background: #2e9e4f;
+}
+
+.stop.end {
+  background: #000000;
+}
+
+.plan {
   position: absolute;
-  top: calc(100% + 8px);
-  right: -10px;
+  top: 12px;
+  left: 12px;
+  font-size: 12px;
+  text-align: left;
+}
+
+.plan .row {
+  display: flex;
+  gap: 16px;
+}
+
+.plan button {
+  padding: 1px 0 0 1px;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.plan button[aria-pressed="true"] {
+  background: var(--accent);
+}
+
+.plan button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.chart {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-  visibility: hidden;
-  opacity: 0;
-  transition: opacity var(--speed) var(--ease), visibility var(--speed);
+  gap: 8px;
 }
 
-body:has(#globe:target) .tab:is(:hover, :focus-within) .menu {
-  visibility: visible;
-  opacity: 1;
+.chart[hidden],
+.settings[hidden] {
+  display: none;
+}
+
+.chart text {
+  font-size: 8px;
+  fill: currentColor;
 }
 
 .box {
@@ -315,7 +367,13 @@ body:has(#globe:target) .tab:is(:hover, :focus-within) .menu {
   background-color: var(--bg);
 }
 
-.relief label {
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings label {
   display: grid;
   grid-template-columns: 8ch 80px 6ch;
   gap: 8px;
@@ -323,13 +381,18 @@ body:has(#globe:target) .tab:is(:hover, :focus-within) .menu {
   white-space: nowrap;
 }
 
-.relief input {
+.settings input {
   width: 100%;
   accent-color: var(--accent);
   cursor: pointer;
 }
 
-.relief output {
+.settings input[type="checkbox"] {
+  width: auto;
+  justify-self: start;
+}
+
+.settings output {
   text-align: right;
 }
 
@@ -361,7 +424,7 @@ footer {
   opacity: 0.4;
 }
 
-@media (min-width: 680px) {
+@media (min-width: 720px) {
   .credit {
     position: absolute;
     right: var(--side);

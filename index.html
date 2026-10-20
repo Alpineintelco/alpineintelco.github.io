@@ -16,13 +16,7 @@
   <nav class="nav">
     <a href="#shop">shop</a>
     <a href="#gallery">gallery</a>
-    <span class="tab"><a href="#globe">globe</a><span class="menu">
-        <span class="box relief">
-          <span>relief</span>
-          <label>quality <input class="quality" type="range" min="0" max="2" step="1" value="1"><output>mid</output></label>
-          <label>render <input class="floor" type="range" min="0" max="3000" step="100" value="900"><output>900 m</output></label>
-        </span>
-      </span></span>
+    <a href="#globe">globe</a>
     <a href="#about">about</a>
   </nav>
   <main>
@@ -42,8 +36,26 @@
     <section id="globe">
       <div class="frame">
         <div class="earth"></div>
+        <div class="plan box">
+          <div class="row">
+            <button class="open" type="button" aria-pressed="false">relief</button>
+            <button class="open" type="button" aria-pressed="false">labels</button>
+            <button type="button" aria-pressed="false">course</button>
+            <button type="button" hidden>undo</button>
+            <button type="button" hidden>export gpx</button>
+          </div>
+          <div class="chart" hidden></div>
+          <div class="settings" hidden>
+            <label>show <input class="shown" type="checkbox" checked><output>on</output></label>
+            <label>quality <input class="quality" type="range" min="0" max="2" step="1" value="1"><output>mid</output></label>
+            <label>render <input class="floor" type="range" min="0" max="3000" step="100" value="900"><output>900 m</output></label>
+          </div>
+          <div class="settings" hidden>
+            <label>show <input class="named" type="checkbox" checked><output>on</output></label>
+          </div>
+        </div>
       </div>
-      <p class="credit"><a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">&copy; OpenMapTiles</a> Data from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> <a href="https://mapterhorn.com/attribution" target="_blank" rel="noopener">&copy; Mapterhorn</a></p>
+      <p class="credit"><a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">&copy; OpenMapTiles</a> Data from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> <a href="https://mapterhorn.com/attribution" target="_blank" rel="noopener">&copy; Mapterhorn</a> <a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a></p>
     </section>
     <section id="about">
       <div class="text">
