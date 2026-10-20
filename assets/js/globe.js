@@ -1,31 +1,15 @@
 const cdn = "https://cdn.jsdelivr.net/npm/maplibre-gl@6.14.0/dist/";
 const box = document.querySelector(".earth");
-const toggle = document.querySelector(".view");
 const quality = document.querySelector(".quality");
 const floor = document.querySelector(".floor");
 const levels = [1024, 512, 256];
 const names = ["low", "mid", "high"];
 const dem = { type: "raster-dem", url: "https://tiles.mapterhorn.com/tilejson.json", encoding: "terrarium", tileSize: 512 };
 const style = "https://tiles.openfreemap.org/styles/liberty";
-const imagery = {
-  type: "raster",
-  tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
-  tileSize: 256,
-  maxzoom: 18,
-};
-const covered = ["transportation", "building"];
+const hidden = ["landcover_grass", "landcover_wetland", "park", "road_area_pattern"];
 let started = false;
-let satellite = false;
 let level = 1;
-let low = 1000;
-
-function switched(layer) {
-  return layer.id === "satellite" || covered.includes(layer["source-layer"]);
-}
-
-function shown(layer) {
-  return (layer.id === "satellite") === satellite ? "visible" : "none";
-}
+let low = 900;
 
 function lift(e) {
   if (e <= low) return low;
@@ -54,8 +38,15 @@ async function relief(params, controller) {
 }
 
 function globe(prev, next) {
-  const layers = next.layers.filter((layer) => layer.type !== "fill-extrusion" && layer.type !== "symbol" && !layer.id.includes("tunnel"));
+  const layers = next.layers.filter((layer) => layer.type !== "fill-extrusion" && layer.type !== "symbol" && !hidden.includes(layer.id) && !layer.id.includes("tunnel"));
   for (const layer of layers) if (layer["source-layer"] === "boundary") layer.maxzoom = 9;
+  for (const layer of layers) {
+    if (!layer.id.endsWith("path_pedestrian")) continue;
+    layer.paint["line-color"] = "#8c8c8c";
+    layer.paint["line-width"] = ["interpolate", ["exponential", 1.2], ["zoom"], 14, 0.5, 20, 5];
+    layer.paint["line-dasharray"] = [3, 3.5];
+    layer.paint["line-opacity"] = 0.7;
+  }
   const building = layers.find((layer) => layer.id === "building");
   if (building) delete building.maxzoom;
   const roads = layers.findIndex((layer) => layer["source-layer"] === "transportation");
@@ -65,27 +56,22 @@ function globe(prev, next) {
     source: "hills",
     paint: { "hillshade-shadow-color": "#473b24", "hillshade-exaggeration": 0.35 },
   }, {
-    id: "satellite",
-    type: "raster",
-    source: "imagery",
-  }, {
     id: "tunnels",
     type: "line",
     source: "openmaptiles",
     "source-layer": "transportation",
     filter: ["all", ["==", ["get", "brunnel"], "tunnel"], ["in", ["get", "class"], ["literal", ["motorway", "trunk", "primary", "secondary", "tertiary", "minor", "service"]]]],
     paint: {
-      "line-color": "#6b6b6b",
+      "line-color": "#ffffff",
       "line-opacity": 0.5,
       "line-width": ["interpolate", ["linear"], ["zoom"], 10, 0.8, 16, 1.6],
       "line-dasharray": [3, 3],
     },
   });
-  for (const layer of layers) if (switched(layer)) layer.layout = { ...layer.layout, visibility: shown(layer) };
   return {
     ...next,
     layers,
-    sources: { ...next.sources, terrain: { ...dem, tileSize: levels[level] }, hills: { type: "raster-dem", tiles: ["relief://tiles.mapterhorn.com/{z}/{x}/{y}.webp?" + low], encoding: "terrarium", tileSize: levels[level] }, imagery },
+    sources: { ...next.sources, terrain: { ...dem, tileSize: levels[level] }, hills: { type: "raster-dem", tiles: ["relief://tiles.mapterhorn.com/{z}/{x}/{y}.webp?" + low], encoding: "terrarium", tileSize: levels[level] } },
     terrain: { source: "terrain", exaggeration: 1 },
     sky: {
       "sky-color": ["interpolate", ["linear"], ["zoom"], 9, "rgba(185, 211, 236, 0)", 11, "#b9d3ec"],
@@ -287,6 +273,9 @@ function controls(map) {
   );
   box.addEventListener("touchstart", halt, { passive: true });
 
+  const reset = () => glide({ lng: 8, lat: 46, zoom: fit(), bearing: 0, tilt: 0 }, 1500);
+  document.querySelector('.nav a[href="#globe"]').addEventListener("click", () => location.hash === "#globe" && reset());
+
   addEventListener("keydown", (e) => {
     if (location.hash !== "#globe" || e.metaKey || e.ctrlKey || e.target instanceof HTMLInputElement) return;
     const k = e.altKey ? 0.3 : 1;
@@ -301,8 +290,7 @@ function controls(map) {
       "-": () => map.zoomTo(map.getZoom() - k, { duration: 300 }),
       n: () => glide({ bearing: 0 }, 600),
       u: () => glide({ tilt: 0 }, 600),
-      s: () => toggle.click(),
-      r: () => glide({ lng: 8, lat: 46, zoom: fit(), bearing: 0, tilt: 0 }, 1500),
+      r: reset,
       " ": () => {
         halt();
         map.stop();
@@ -355,12 +343,6 @@ async function start() {
     floor.addEventListener("change", () => {
       low = +floor.value;
       map.setStyle(style, { transformStyle: globe });
-    });
-    toggle.addEventListener("click", () => {
-      satellite = !satellite;
-      toggle.setAttribute("aria-pressed", satellite);
-      if (!map.getLayer("satellite")) return;
-      for (const layer of map.getStyle().layers) if (switched(layer)) map.setLayoutProperty(layer.id, "visibility", shown(layer));
     });
     map.once("load", () => map.easeTo({ center: [8, 46], zoom: fit(), duration: 2000 }));
   } catch {
