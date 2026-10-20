@@ -12,6 +12,7 @@
   --side: 32px;
   --logo-h: 56px;
   --tab-gap: 32px;
+  --ch: 0.723em;
   --speed: 0.35s;
   --ease: cubic-bezier(0.65, 0, 0.35, 1);
 }
@@ -39,7 +40,7 @@ body {
   line-height: 1.2;
   color: var(--ink);
   background: #e2e2df;
-  transition: color var(--speed) var(--ease);
+  transition: color var(--speed) var(--ease), background-color var(--speed) var(--ease);
 }
 
 body::before {
@@ -58,6 +59,12 @@ body:has(:target) {
 
 body:has(:target)::before {
   opacity: 0;
+}
+
+body:has(#globe:target) {
+  --ink: #ffffff;
+  --hover-ink: #ffffff;
+  background-color: #262626;
 }
 
 a {
@@ -90,26 +97,24 @@ body:has(:target) .logo img + img {
   opacity: 1;
 }
 
-.nav {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  gap: 20px;
-  font-size: 12px;
-  animation: appear var(--speed) var(--ease);
+body:has(#globe:target) .logo img:first-child {
+  opacity: 1;
 }
 
-body:has(:target) .nav {
+body:has(#globe:target) .logo img + img {
+  opacity: 0;
+}
+
+.nav {
   position: absolute;
   z-index: 1;
   top: calc(var(--top) + var(--logo-h) / 2);
   right: var(--side);
   translate: 0 -50%;
-  flex-direction: row;
+  display: flex;
   gap: var(--tab-gap);
-  animation-name: appear-again;
+  font-size: 12px;
+  animation: appear var(--speed) var(--ease);
 }
 
 body:has(:target) .nav::before {
@@ -127,17 +132,22 @@ body:has(:target) .nav::before {
 
 body:has(#shop:target) {
   --x: 0px;
-  --w: calc(4ch + 1px);
+  --w: calc(4 * var(--ch) + 1px);
 }
 
 body:has(#gallery:target) {
-  --x: calc(4ch + 1px + var(--tab-gap));
-  --w: calc(7ch + 1px);
+  --x: calc(4 * var(--ch) + 1px + var(--tab-gap));
+  --w: calc(7 * var(--ch) + 1px);
+}
+
+body:has(#globe:target) {
+  --x: calc(11 * var(--ch) + 2px + 2 * var(--tab-gap));
+  --w: calc(5 * var(--ch) + 1px);
 }
 
 body:has(#about:target) {
-  --x: calc(11ch + 2px + 2 * var(--tab-gap));
-  --w: calc(5ch + 1px);
+  --x: calc(16 * var(--ch) + 3px + 3 * var(--tab-gap));
+  --w: calc(5 * var(--ch) + 1px);
 }
 
 .nav a {
@@ -161,7 +171,9 @@ body:has(#about:target) {
 .nav a:hover,
 .nav a:focus-visible,
 .link:hover,
-.link:focus-visible {
+.link:focus-visible,
+.menu button:hover,
+.menu button:focus-visible {
   outline: none;
   color: var(--hover-ink);
   transform: scale(1.1);
@@ -172,6 +184,7 @@ body:has(#about:target) {
 
 body:has(#shop:target) .nav a[href="#shop"],
 body:has(#gallery:target) .nav a[href="#gallery"],
+body:has(#globe:target) .nav a[href="#globe"],
 body:has(#about:target) .nav a[href="#about"] {
   color: var(--hover-ink);
   transform: scale(1.1);
@@ -189,12 +202,6 @@ body:has(#about:target) .nav a[href="#about"] {
 }
 
 @keyframes appear {
-  from {
-    opacity: 0;
-  }
-}
-
-@keyframes appear-again {
   from {
     opacity: 0;
   }
@@ -257,6 +264,110 @@ section:target {
   object-fit: cover;
 }
 
+.frame {
+  position: relative;
+  display: flex;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  margin-top: calc(var(--top) + var(--logo-h) + 24px);
+}
+
+.earth {
+  flex: 1;
+}
+
+.tab {
+  position: relative;
+}
+
+.tab::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 8px;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: -10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity var(--speed) var(--ease), visibility var(--speed);
+}
+
+body:has(#globe:target) .tab:is(:hover, :focus-within) .menu {
+  visibility: visible;
+  opacity: 1;
+}
+
+.box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  background-color: var(--bg);
+}
+
+.relief label {
+  display: grid;
+  grid-template-columns: 8ch 80px 6ch;
+  gap: 8px;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.relief input {
+  width: 100%;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.relief output {
+  text-align: right;
+}
+
+.menu button {
+  padding: 1px 0 0 1px;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  white-space: nowrap;
+  background-color: transparent;
+  cursor: pointer;
+  transition: transform 0.3s, background-color var(--speed) var(--ease);
+}
+
+.view[aria-pressed="true"] {
+  background-color: var(--accent);
+}
+
+.imagery {
+  display: none;
+}
+
+body:has(.view[aria-pressed="true"]) .imagery {
+  display: inline;
+}
+
+#globe {
+  gap: 8px;
+}
+
+.credit {
+  align-self: flex-end;
+  font-size: 8px;
+  opacity: 0.4;
+}
+
 .text {
   display: flex;
   flex-direction: column;
@@ -267,8 +378,21 @@ section:target {
 }
 
 footer {
-  padding: 16px;
-  font-size: 10px;
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 16px var(--side);
+  font-size: 8px;
+  line-height: 12px;
+  opacity: 0.4;
+}
+
+@media (min-width: 680px) {
+  .credit {
+    position: absolute;
+    right: var(--side);
+    bottom: 16px;
+    line-height: 12px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
