@@ -61,7 +61,7 @@ body:has(:target)::before {
   opacity: 0;
 }
 
-body:has(#globe:target) {
+body:has(:is(#globe, #maquette):target) {
   --ink: #ffffff;
   --hover-ink: #ffffff;
   background-color: #262626;
@@ -97,11 +97,11 @@ body:has(:target) .logo img + img {
   opacity: 1;
 }
 
-body:has(#globe:target) .logo img:first-child {
+body:has(:is(#globe, #maquette):target) .logo img:first-child {
   opacity: 1;
 }
 
-body:has(#globe:target) .logo img + img {
+body:has(:is(#globe, #maquette):target) .logo img + img {
   opacity: 0;
 }
 
@@ -145,8 +145,13 @@ body:has(#globe:target) {
   --w: calc(5 * var(--ch) + 1px);
 }
 
-body:has(#about:target) {
+body:has(#maquette:target) {
   --x: calc(16 * var(--ch) + 3px + 3 * var(--tab-gap));
+  --w: calc(8 * var(--ch) + 1px);
+}
+
+body:has(#about:target) {
+  --x: calc(24 * var(--ch) + 4px + 4 * var(--tab-gap));
   --w: calc(5 * var(--ch) + 1px);
 }
 
@@ -172,8 +177,8 @@ body:has(#about:target) {
 .nav a:focus-visible,
 .link:hover,
 .link:focus-visible,
-.plan button:not(:disabled):hover,
-.plan button:focus-visible {
+.box button:not(:disabled):hover,
+.box button:focus-visible {
   outline: none;
   color: var(--hover-ink);
   transform: scale(1.1);
@@ -185,6 +190,7 @@ body:has(#about:target) {
 body:has(#shop:target) .nav a[href="#shop"],
 body:has(#gallery:target) .nav a[href="#gallery"],
 body:has(#globe:target) .nav a[href="#globe"],
+body:has(#maquette:target) .nav a[href="#maquette"],
 body:has(#about:target) .nav a[href="#about"] {
   color: var(--hover-ink);
   transform: scale(1.1);
@@ -323,7 +329,7 @@ section:target {
   gap: 16px;
 }
 
-.plan button {
+.box button {
   padding: 1px 0 0 1px;
   font: inherit;
   color: inherit;
@@ -333,11 +339,11 @@ section:target {
   transition: transform 0.3s;
 }
 
-.plan button[aria-pressed="true"] {
+.box button[aria-pressed="true"] {
   background: var(--accent);
 }
 
-.plan button:disabled {
+.box button:disabled {
   opacity: 0.4;
   cursor: default;
 }
@@ -396,8 +402,99 @@ section:target {
   text-align: right;
 }
 
-#globe {
+#globe,
+#maquette {
   gap: 8px;
+}
+
+.stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.stage canvas {
+  display: block;
+}
+
+.names {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.city {
+  top: 0;
+  left: 0;
+  padding-bottom: 3px;
+  font-size: 10px;
+  color: #ffffff;
+  white-space: nowrap;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.6);
+}
+
+.loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  opacity: 0.5;
+}
+
+.tune {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  font-size: 12px;
+  text-align: left;
+  color: #ffffff;
+}
+
+.tune[hidden] {
+  display: none;
+}
+
+.tune .settings label {
+  grid-template-columns: 7ch 120px 4ch;
+}
+
+.tune input[type="range"] {
+  --fill: 100%;
+  height: 14px;
+  appearance: none;
+  background: linear-gradient(var(--accent), var(--accent)) 0 50% / var(--fill) 2px no-repeat, linear-gradient(rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.25)) 0 50% / 100% 2px no-repeat;
+}
+
+.tune input[type="range"]::-webkit-slider-thumb {
+  width: 10px;
+  height: 10px;
+  appearance: none;
+  background: #ffffff;
+  border: 0;
+  border-radius: 0;
+}
+
+.tune input[type="range"]::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border: 0;
+  border-radius: 0;
+}
+
+.tune input[type="range"]:hover::-webkit-slider-thumb,
+.tune input[type="range"]:focus-visible::-webkit-slider-thumb {
+  background: var(--accent);
+}
+
+.tune input[type="range"]:hover::-moz-range-thumb,
+.tune input[type="range"]:focus-visible::-moz-range-thumb {
+  background: var(--accent);
+}
+
+.tune input[type="range"]:focus-visible {
+  outline: none;
 }
 
 .credit {
@@ -455,5 +552,15 @@ footer {
     --cols: var(--cm);
     --rows: var(--rm);
     --gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --tab-gap: 14px;
+  }
+
+  .nav {
+    font-size: 10px;
   }
 }
