@@ -10,6 +10,7 @@ const skirt = tune.querySelector(".sides");
 const loading = stage.querySelector(".loading");
 const gate = document.querySelector("#maquette .gate");
 const word = gate.querySelector("input");
+let open = false;
 let started = false;
 let running = false;
 let frame = () => {};
@@ -21,9 +22,12 @@ function loop(now) {
 }
 
 async function start() {
-  if (location.hash !== "#maquette") return;
-  gate.hidden = load("maquette-pass", false);
-  if (!gate.hidden) return word.focus();
+  if (location.hash !== "#maquette") return (open = false);
+  gate.hidden = open;
+  if (!open) {
+    word.value = "";
+    return word.focus();
+  }
   if (!running) {
     running = true;
     requestAnimationFrame(loop);
@@ -71,7 +75,7 @@ gate.addEventListener("submit", (e) => {
     word.classList.add("wrong");
     return;
   }
-  keep("maquette-pass", true);
+  open = true;
   start();
 });
 

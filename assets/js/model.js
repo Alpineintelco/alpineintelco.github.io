@@ -738,7 +738,7 @@ export async function build({ THREE, OrbitControls, Line2, LineMaterial, LineGeo
   fit();
   const watch = new ResizeObserver(fit);
   watch.observe(stage);
-  const distance = Math.max(200, 250 / camera.aspect);
+  const distance = camera.aspect >= 1 ? Math.max(200, 250 / camera.aspect) : 210 / camera.aspect;
   camera.position.set(distance * 0.35, distance * 0.7, distance * 0.62).add(controls.target);
   camera.lookAt(controls.target);
 

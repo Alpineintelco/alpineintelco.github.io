@@ -19,6 +19,7 @@
   --logo-h: 56px;
   --tab-gap: 32px;
   --ch: 0.723em;
+  --stop: 0.602em;
   --speed: 0.35s;
   --ease: cubic-bezier(0.65, 0, 0.35, 1);
 }
@@ -119,6 +120,7 @@ body:has(:is(#maquette, #game):target) .logo img + img {
   translate: 0 -50%;
   display: flex;
   gap: var(--tab-gap);
+  font-family: "Stops", "OCR-A", monospace;
   font-size: 12px;
   animation: appear var(--speed) var(--ease);
 }
@@ -143,16 +145,16 @@ body:has(#shop:target) {
 
 body:has(#maquette:target) {
   --x: calc(4 * var(--ch) + 1px + var(--tab-gap));
-  --w: calc(8 * var(--ch) + 1px);
+  --w: calc(9 * var(--ch) + 1px);
 }
 
 body:has(#game:target) {
-  --x: calc(12 * var(--ch) + 2px + 2 * var(--tab-gap));
-  --w: calc(4 * var(--ch) + 1px);
+  --x: calc(13 * var(--ch) + 2px + 2 * var(--tab-gap));
+  --w: calc(11 * var(--ch) + var(--stop) + 1px);
 }
 
 body:has(#about:target) {
-  --x: calc(16 * var(--ch) + 3px + 3 * var(--tab-gap));
+  --x: calc(24 * var(--ch) + var(--stop) + 3px + 3 * var(--tab-gap));
   --w: calc(5 * var(--ch) + 1px);
 }
 
@@ -230,6 +232,7 @@ body:has(:target) main {
 section {
   display: none;
   flex: 1;
+  min-width: 0;
   min-height: 0;
   flex-direction: column;
   align-items: center;
@@ -405,6 +408,10 @@ section:target {
 #maquette,
 #game {
   gap: 8px;
+}
+
+#maquette .frame:has(.gate:not([hidden])) :is(.stage, .tune) {
+  visibility: hidden;
 }
 
 .stage {
@@ -1140,6 +1147,7 @@ section:target {
 
 .credit {
   align-self: flex-end;
+  max-width: 100%;
   font-size: 8px;
   opacity: 0.4;
 }
@@ -1199,6 +1207,14 @@ footer {
 @media (max-width: 480px) {
   :root {
     --tab-gap: 14px;
+  }
+
+  .city {
+    font-size: 8px;
+  }
+
+  .lobby {
+    padding: 20px;
   }
 
   .nav {
